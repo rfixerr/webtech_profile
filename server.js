@@ -9,10 +9,25 @@ const sequelize = new Sequelize('profile','root','',{
     host:'localhost'
 })
 
+
 sequelize.authenticate().then(function(){
     console.log('success');
 }).catch(function(){
     console.log("There was an error connecting to the DB")
+})
+
+const Messages = sequelize.define('messages',{
+    name:Sequelize.STRING,
+    subject:Sequelize.STRING,
+    message:Sequelize.TEXT
+})
+
+app.get('/createdb',function(request,response){
+    sequelize.sync({force:true}).then(function(){
+        response.status(200).send('Tables created')
+    }).catch(function(){
+        response.status(200).send('Could not create tables')
+    })
 })
 
 app.use('/',express.static('static')) 
@@ -36,28 +51,27 @@ app.get('/hello',function(request,response){
     response.status(200).send('Hello '+ name + '!' + ' You registered with the email '+email);
 })
 
+
+//will return a list of all messages
 app.get('/messages', (request,response) => {
-    if(request.query.search != undefined){
-        let filteredMessages = [];
-        for(var i=0;i < messages.length;i++){
-            if(messages[i].message.includes(request.query.search)){
-                filteredMessages.push(messages[i])
-            }
-        }
-        response.status(200).json(filteredMessages)
-    }
-    else{
-        response.status(200).json(messages);
-        
-    }
+    Messages.findAll().then((messages) => {
+        response.status(200).json(messages)
+    })
 })
 
 app.get('/messages/:id', (request,response) => {
     response.status(200).send("Not implemented");
 })
 
+//to be able to read JSON body
+app.use(express.json())
+app.use(express.urlencoded())
+
 app.post('/messages', (request,response) => {
-    response.status(200).send("Not implemented");
+    Messages.create(request.body).then((message) =>
+    {
+        response.status(201).json(message)
+    })
 })
 
 app.put('/messages/:id', (request,response) => {
